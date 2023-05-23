@@ -6,6 +6,9 @@ using MongoDB.Driver;
 using System;
 using MongoDB.Bson;
 using ServiceWorker.DTO;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace ServiceWorker;
 
@@ -39,7 +42,7 @@ public class Worker : BackgroundService
 
 
         //Connects to the database
-        var client = new MongoClient(_config["MongoDB:ConnectionString"]);
+       var client = new MongoClient(_config.GetConnectionString("MongoDB"));
         _database = client.GetDatabase(_config["MongoDB:Database"]);
         AuctionCollection = _database.GetCollection<Auction>(_config["MongoDB:AuctionCollection"]);
         UsersCollection = _database.GetCollection<UserDTO>(_config["MongoDB:UsersCollection"]);
@@ -95,10 +98,11 @@ public class Worker : BackgroundService
     {
         Auction auction = AuctionCollection.Find(a => a.Id == auctionId).FirstOrDefault();
 
-        var client = new MongoClient("MongoDB:ConnectionString");
+        var client = new MongoClient(_config.GetConnectionString("MongoDB"));
         var database = client.GetDatabase("MongoDB:Database");
-        var collection = database.GetCollection<BidDTO>("BidCollection");
-        var auctionCollection = database.GetCollection<Auction>("AuctionCollection");
+        var collection = _database.GetCollection<BidDTO>(_config["MongoDB:BidCollection"]);
+        var auctionCollection = _database.GetCollection<Auction>(_config["MongoDB:AuctionCollection"]);
+
         var auctionById = auctionCollection.Find(a => a.Id == auctionId).FirstOrDefault();
         var bid = new BidDTO(id, bidAmount, bidderId, bidTime, auctionId);
 

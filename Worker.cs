@@ -9,6 +9,7 @@ using ServiceWorker.DTO;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using System.IO;
 
 namespace ServiceWorker;
 
@@ -17,11 +18,12 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
     private readonly string? _docPath;
     private readonly string? _rabbitMQ;
+    private readonly IMongoDatabase _database;
     private IConfiguration _config;
-    private IMongoDatabase _database;
-    private IMongoCollection<Auction> AuctionCollection { get; }
-    private IMongoCollection<BidDTO> BidCollection { get; }
-    private IMongoCollection<UserDTO> UsersCollection { get; }
+    private IMongoDatabase Database { get; }
+    private IMongoCollection<Auction> AuctionCollection;
+    private IMongoCollection<BidDTO> BidCollection;
+    private IMongoCollection<UserDTO> UsersCollection;
 
     public Worker(ILogger<Worker> logger, IConfiguration config)
     {
@@ -36,26 +38,25 @@ public class Worker : BackgroundService
         var ips = System.Net.Dns.GetHostAddresses(hostName);
         var _ipaddress = ips.First().MapToIPv4().ToString();
 
-        //Logs the enviroment variable
-        _logger.LogInformation($"File path is set to : {_docPath}");
-        _logger.LogInformation($"RabbitMQ connection is set to : {_rabbitMQ}");
-
 
         //Connects to the database
-       var client = new MongoClient(_config.GetConnectionString("MongoDB"));
-        _database = client.GetDatabase(_config["MongoDB:Database"]);
-        AuctionCollection = _database.GetCollection<Auction>(_config["MongoDB:AuctionCollection"]);
-        UsersCollection = _database.GetCollection<UserDTO>(_config["MongoDB:UsersCollection"]);
-        BidCollection = _database.GetCollection<BidDTO>(_config["MongoDB:BidCollection"]);
+       MongoClient client = new MongoClient("mongodb+srv://mikkelbojstrup:aha64jmj@auktionshus.67fs0yo.mongodb.net/");
+        _database = client.GetDatabase("Auction");
+        AuctionCollection = _database.GetCollection<Auction>("AuctionCollection");
+        UsersCollection = _database.GetCollection<UserDTO>("UsersCollection");
+        BidCollection = _database.GetCollection<BidDTO>("BidCollection");
 
-        _logger.LogInformation($"Fil sti er sat til: {_docPath}");
-        _logger.LogInformation($"RabbitMQ er sat til: {_rabbitMQ}");
+         //Logs the enviroment variable
+        _logger.LogInformation($"File path is set to : {_docPath}");
+        _logger.LogInformation($"RabbitMQ connection is set to : {_rabbitMQ}");
+        _logger.LogInformation($"MongoDB er sat til: {_config.GetConnectionString("MongoDB")}");
+        
     }
 
     public void RecieveBid()
     {
         _logger.LogInformation("Recieving bid at {time}", DateTime.Now);
-        var factory = new ConnectionFactory() { HostName = _rabbitMQ };
+        var factory = new RabbitMQ.Client.ConnectionFactory() { Uri = new Uri("amqp://guest:guest@localhost:5672/") };
         using var connection = factory.CreateConnection();
         using var channel = connection.CreateModel();
         {
@@ -130,6 +131,7 @@ public class Worker : BackgroundService
             await Task.Delay(1000, stoppingToken);
         }
     }
+    
 
 }
 

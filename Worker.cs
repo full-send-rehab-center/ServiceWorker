@@ -55,9 +55,9 @@ public class Worker : BackgroundService
 
     //var factory = new RabbitMQ.Client.ConnectionFactory() { Uri = new Uri("amqp://guest:guest@localhost:5672/") };
 
-    public void RecieveBid()
+    public IModel RecieveBid()
 {
-    var factory = new RabbitMQ.Client.ConnectionFactory() { Uri = new Uri("amqp://guest:guest@localhost:5672/") };
+    var factory = new RabbitMQ.Client.ConnectionFactory() { HostName = "localhost" };
     factory.DispatchConsumersAsync = true;
 
     using var connection = factory.CreateConnection();
@@ -117,7 +117,9 @@ public class Worker : BackgroundService
         {
             Thread.Sleep(100);
         }
+        return consumer as IModel;
     }
+   
 }
 
 
@@ -146,7 +148,9 @@ public class Worker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-        RecieveBid();
+
+        //Out of scope, hvis den ikke bliver placeret her ift .NET
+        var consumer = RecieveBid();
 
         while (!stoppingToken.IsCancellationRequested)
         {

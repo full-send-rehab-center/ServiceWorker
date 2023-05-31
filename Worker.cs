@@ -16,8 +16,7 @@ namespace ServiceWorker
     public class Worker : BackgroundService
     {
         private readonly ILogger<Worker> _logger;
-        private readonly string? _docPath;
-        private readonly string? _rabbitMQ;
+        private readonly string _rabbitMQ;
         private readonly IMongoDatabase _database;
         private IConfiguration _config;
         private IMongoDatabase Database { get; }
@@ -31,33 +30,42 @@ namespace ServiceWorker
         {
             // Initialiserer logger og læser konfigurationsoplysninger
             _logger = logger;
-            _docPath = config["DocPath"];
-            _rabbitMQ = config["RabbitMQ"];
             _config = config;
+
+            // Tildeler værdier fra appsettings.json til private variabler
+            _rabbitMQ = _config["RabbitMQ"];
 
             // Opretter forbindelse til MongoDB og initialiserer MongoDB-samlinger
             var hostName = System.Net.Dns.GetHostName();
             var ips = System.Net.Dns.GetHostAddresses(hostName);
             var _ipaddress = ips.First().MapToIPv4().ToString();
-            MongoClient client = new MongoClient("mongodb+srv://mikkelbojstrup:aha64jmj@auktionshus.67fs0yo.mongodb.net/");
+            var mongoDBConnectionString = _config["MongoDB:ConnectionString"];
+            MongoClient client = new MongoClient(mongoDBConnectionString);
             _database = client.GetDatabase("Auction");
             AuctionCollection = _database.GetCollection<Auction>("AuctionCollection");
             UsersCollection = _database.GetCollection<UserDTO>("UsersCollection");
             BidCollection = _database.GetCollection<BidDTO>("BidCollection");
 
             // Logger konfigurationsoplysningerne
-            _logger.LogInformation($"File path is set to : {_docPath}");
-            _logger.LogInformation($"RabbitMQ connection is set to : {_rabbitMQ}");
+         
+            _logger.LogInformation($"RabbitMQ connection is set to: {_rabbitMQ}");
             _logger.LogInformation($"MongoDB er sat til: {_config.GetConnectionString("MongoDB")}");
+            
         }
 
         public void ConnectRabbitMQ()
         {
+            var rabbitMQConnectionString = _config["RabbitMQ:ConnectionString"];
             // Opretter en forbindelse og en kanal til RabbitMQ
-            var factory = new RabbitMQ.Client.ConnectionFactory() { HostName = "localhost" };
+            //var factory = new RabbitMQ.Client.ConnectionFactory() { HostName = "localhost" };
+            var factory = new RabbitMQ.Client.ConnectionFactory() { Uri = new Uri(rabbitMQConnectionString) };
             factory.DispatchConsumersAsync = true;
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
+            
+            _channel.ExchangeDelete("bidExchange"); // Fjerner den eksisterende udveksling
+            _channel.ExchangeDeclare(exchange: "bidExchange", type: ExchangeType.Topic, durable: false);
+
 
             // Erklærer en kø og binder den til en udveksling med en rute
             _channel.QueueDeclare(queue: "bidQueue", durable: false, exclusive: false, autoDelete: false, arguments: null);

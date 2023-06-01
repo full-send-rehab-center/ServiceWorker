@@ -18,10 +18,10 @@ namespace ServiceWorker
         private readonly ILogger<Worker> _logger;
         private readonly IMongoDatabase _database;
         private IConfiguration _config;
-        private IMongoDatabase Database { get; }
-        private IMongoCollection<Auction> AuctionCollection;
-        private IMongoCollection<BidDTO> BidCollection;
-        private IMongoCollection<UserDTO> UsersCollection;
+        private IMongoDatabase Database { get; set; }
+        private IMongoCollection<Auction> AuctionCollection { get; set; }
+        private IMongoCollection<BidDTO> BidCollection { get; set; }
+        private IMongoCollection<UserDTO> UsersCollection { get; set; }
         private IConnection _connection;
         private IModel _channel;
         private readonly string _rabbitMQ;
@@ -35,32 +35,28 @@ namespace ServiceWorker
             // Tildeler værdier fra appsettings.json til private variabler
             _rabbitMQ = config["RabbitMQ"];
 
-            // Opretter forbindelse til MongoDB og initialiserer MongoDB-samlinger
-            var hostName = System.Net.Dns.GetHostName();
-            var ips = System.Net.Dns.GetHostAddresses(hostName);
-            var _ipaddress = ips.First().MapToIPv4().ToString();
-
             // var mongoDBConnectionString = _config["MongoDB:ConnectionString"];
             var mongoDBConnectionString = config["ConnectionString"];
 
-            MongoClient client = new MongoClient(mongoDBConnectionString);
-            _database = client.GetDatabase("DatabaseName");
-            AuctionCollection = _database.GetCollection<Auction>("CollectionName");
-            UsersCollection = _database.GetCollection<UserDTO>("UsersCollection");
-            BidCollection = _database.GetCollection<BidDTO>("BidCollection");
+            var client = new MongoClient(mongoDBConnectionString);
+            _database = client.GetDatabase(config["DatabaseName"]);
+            AuctionCollection = _database.GetCollection<Auction>(config["CollectionName"]);
+            // UsersCollection = _database.GetCollection<UserDTO>("UsersCollection");
+            // BidCollection = _database.GetCollection<BidDTO>("BidCollection");
 
             // Logger konfigurationsoplysningerne
          
-            _logger.LogInformation($"RabbitMQ connection is set to: {_rabbitMQ}");
-            _logger.LogInformation($"MongoDB er sat til: {mongoDBConnectionString}");
-            
+            _logger.LogInformation($"RabbitMQ connection is set to: '{_rabbitMQ}'");
+            _logger.LogInformation($"MongoDB er sat til: '{mongoDBConnectionString}'");
+            _logger.LogInformation($"Database er sat til: '{config["DatabaseName"]}'");
+            _logger.LogInformation($"AuctionCollection er sat til: '{config["CollectionName"]}'");
         }
 
         public void ConnectRabbitMQ()
         {
             // Opretter en forbindelse og en kanal til RabbitMQ
-            // var factory = new ConnectionFactory() { HostName = _rabbitMQ };
-            var factory = new RabbitMQ.Client.ConnectionFactory() { Uri = new Uri(_rabbitMQ) };
+            var factory = new ConnectionFactory() { HostName = _rabbitMQ };
+            // var factory = new RabbitMQ.Client.ConnectionFactory() { Uri = new Uri(_rabbitMQ) };
             // var factory = new RabbitMQ.Client.ConnectionFactory() { Uri = new Uri(rabbitMQConnectionString) };
             factory.DispatchConsumersAsync = true;
             _connection = factory.CreateConnection();
@@ -117,6 +113,7 @@ namespace ServiceWorker
 
         public async Task ValidateBid(string id, decimal bidAmount, string bidderId, DateTime bidTime, string auctionId)
         {
+            _logger.LogInformation($"Validate bid: {auctionId}");
             // Finder auktionsdokumentet
             var auction = await AuctionCollection.Find(a => a.Id == auctionId).FirstOrDefaultAsync();
 

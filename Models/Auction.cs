@@ -10,7 +10,7 @@ namespace ServiceWorker.DTO
         public string? Id { get; set; }
 
         [BsonElement("auctionItem")]
-        public string? AuctionItem { get; set; }
+        public ProduktKatalog? AuctionItem { get; set; }
 
         [BsonElement("startingPrice")]
         public decimal StartingPrice { get; set; }

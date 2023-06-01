@@ -15,8 +15,14 @@ namespace ServiceWorker.DTO
         [BsonElement("password")]
         public string Password { get; set; }
 
+        [BsonElement("salt")]
+        public string? Salt { get; set; }
+
         [BsonElement("role")]
         public string Role { get; set; }
+
+        [BsonElement("Name")]
+        public string? givenName { get; set; }
 
         [BsonElement("address")]
         public string Address { get; set; }

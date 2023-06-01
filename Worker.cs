@@ -33,32 +33,35 @@ namespace ServiceWorker
             _config = config;
 
             // Tildeler værdier fra appsettings.json til private variabler
-            _rabbitMQ = _config["RabbitMQ"];
+            _rabbitMQ = config["RabbitMQ"];
 
             // Opretter forbindelse til MongoDB og initialiserer MongoDB-samlinger
             var hostName = System.Net.Dns.GetHostName();
             var ips = System.Net.Dns.GetHostAddresses(hostName);
             var _ipaddress = ips.First().MapToIPv4().ToString();
-            var mongoDBConnectionString = _config["MongoDB:ConnectionString"];
+
+            // var mongoDBConnectionString = _config["MongoDB:ConnectionString"];
+            var mongoDBConnectionString = config["ConnectionString"];
+
             MongoClient client = new MongoClient(mongoDBConnectionString);
-            _database = client.GetDatabase("Auction");
-            AuctionCollection = _database.GetCollection<Auction>("AuctionCollection");
+            _database = client.GetDatabase("DatabaseName");
+            AuctionCollection = _database.GetCollection<Auction>("CollectionName");
             UsersCollection = _database.GetCollection<UserDTO>("UsersCollection");
             BidCollection = _database.GetCollection<BidDTO>("BidCollection");
 
             // Logger konfigurationsoplysningerne
          
             _logger.LogInformation($"RabbitMQ connection is set to: {_rabbitMQ}");
-            _logger.LogInformation($"MongoDB er sat til: {_config.GetConnectionString("MongoDB")}");
+            _logger.LogInformation($"MongoDB er sat til: {mongoDBConnectionString}");
             
         }
 
         public void ConnectRabbitMQ()
         {
-            var rabbitMQConnectionString = _config["RabbitMQ:ConnectionString"];
+            var rabbitMQConnectionString = config["RabbitMQ:ConnectionString"];
             // Opretter en forbindelse og en kanal til RabbitMQ
-            //var factory = new RabbitMQ.Client.ConnectionFactory() { HostName = "localhost" };
-            var factory = new RabbitMQ.Client.ConnectionFactory() { Uri = new Uri(rabbitMQConnectionString) };
+            var factory = new ConnectionFactory() { HostName = _rabbitMQ };
+            // var factory = new RabbitMQ.Client.ConnectionFactory() { Uri = new Uri(rabbitMQConnectionString) };
             factory.DispatchConsumersAsync = true;
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();

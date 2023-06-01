@@ -7,8 +7,9 @@ public class ProduktKatalog
 {
 [BsonId]
 [BsonRepresentation(BsonType.ObjectId)]
-public string? CategoryId {get; set;}
+public string? ProductId {get; set;}
 public string? CategoryCode {get; set;}
-public string? CategoryName {get; set;}
-public string? CategoryDescription {get; set;}
+public string? ProductName {get; set;}
+public string? ProductDescription {get; set;}
+public string? itemCondition {get; set;}
 }

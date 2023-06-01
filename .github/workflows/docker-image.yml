@@ -23,9 +23,9 @@ jobs:
     - name: Build the Docker Image
       env:
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
-      run: docker build . --file ./Dockerfile --tag ${DOCKER_USER}/auctionservice:latest
+      run: docker build . --file ./Dockerfile --tag ${DOCKER_USER}/serviceworker:latest
       
     - name: Push image to Docker Hub
       env: 
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
-      run: docker push ${DOCKER_USER}/auctionservice:latest
+      run: docker push ${DOCKER_USER}/serviceworker:latest

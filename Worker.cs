@@ -16,7 +16,6 @@ namespace ServiceWorker
     public class Worker : BackgroundService
     {
         private readonly ILogger<Worker> _logger;
-        private readonly string _rabbitMQ;
         private readonly IMongoDatabase _database;
         private IConfiguration _config;
         private IMongoDatabase Database { get; }
@@ -25,6 +24,7 @@ namespace ServiceWorker
         private IMongoCollection<UserDTO> UsersCollection;
         private IConnection _connection;
         private IModel _channel;
+        private readonly string _rabbitMQ;
 
         public Worker(ILogger<Worker> logger, IConfiguration config)
         {
@@ -58,9 +58,9 @@ namespace ServiceWorker
 
         public void ConnectRabbitMQ()
         {
-            var rabbitMQConnectionString = config["RabbitMQ:ConnectionString"];
             // Opretter en forbindelse og en kanal til RabbitMQ
-            var factory = new ConnectionFactory() { HostName = _rabbitMQ };
+            // var factory = new ConnectionFactory() { HostName = _rabbitMQ };
+            var factory = new RabbitMQ.Client.ConnectionFactory() { Uri = new Uri(_rabbitMQ) };
             // var factory = new RabbitMQ.Client.ConnectionFactory() { Uri = new Uri(rabbitMQConnectionString) };
             factory.DispatchConsumersAsync = true;
             _connection = factory.CreateConnection();
